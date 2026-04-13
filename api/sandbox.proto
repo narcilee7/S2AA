@@ -1,20 +1,33 @@
 syntax = "proto3";
 
-package sandbox;
-option go_package = "github.com/narcilee7/agent-sandbox/api";
+package s2aa.sandbox;
+option go_package = "github.com/narcilee7/S2AA/api/sandboxpb";
 
-// GuestAgent service is exposed inside the microVM via vsock.
-service GuestAgent {
+import "google/protobuf/empty.proto";
+
+// SandboxService is exposed inside the microVM guest and reachable from the host via vsock.
+service SandboxService {
+  // Execute runs a command synchronously and returns the full result.
   rpc Execute(ExecuteRequest) returns (ExecuteResponse);
+
+  // ExecuteStream runs a command and streams stdout, stderr, progress and the final result back.
   rpc ExecuteStream(ExecuteRequest) returns (stream StreamChunk);
+
+  // Cancel attempts to cancel a running command.
   rpc Cancel(CancelRequest) returns (CancelResponse);
 
-  rpc ReadFile(FileRequest) returns (FileResponse);
+  // Filesystem operations
+  rpc ReadFile(FileRequest) returns (ReadFileResponse);
   rpc WriteFile(WriteFileRequest) returns (FileResponse);
   rpc ListFiles(FileRequest) returns (ListFilesResponse);
   rpc DeleteFile(FileRequest) returns (FileResponse);
+  rpc MkdirAll(MkdirRequest) returns (FileResponse);
+  rpc Stat(FileRequest) returns (StatResponse);
 
+  // Port exposure
   rpc ExposePort(PortRequest) returns (PortResponse);
+
+  // Status
   rpc GetStatus(StatusRequest) returns (StatusResponse);
 }
 
@@ -59,10 +72,21 @@ message FileRequest {
   string path = 1;
 }
 
+message ReadFileResponse {
+  bool success = 1;
+  string error = 2;
+  bytes data = 3;
+}
+
 message WriteFileRequest {
   string path = 1;
   bytes data = 2;
   uint32 mode = 3;
+}
+
+message MkdirRequest {
+  string path = 1;
+  uint32 mode = 2;
 }
 
 message FileResponse {
@@ -83,6 +107,12 @@ message ListFilesResponse {
   bool success = 1;
   string error = 2;
   repeated FileInfoMsg entries = 3;
+}
+
+message StatResponse {
+  bool success = 1;
+  string error = 2;
+  FileInfoMsg info = 3;
 }
 
 message PortRequest {
