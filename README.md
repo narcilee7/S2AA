@@ -3,6 +3,9 @@
 一个面向 AI Agent 的生产级安全沙箱执行环境，采用 **Firecracker microVM + Guest Agent** 架构，支持硬件级隔离、持久化 Workspace、流式执行、文件系统 API、端口映射、网络代理与审计日志。
 
 [![Go Version](https://img.shields.io/badge/Go-1.25.5-blue)](https://go.dev)
+[![CI](https://github.com/narcilee7/S2AA/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/narcilee7/S2AA/actions/workflows/ci.yml)
+[![Release](https://github.com/narcilee7/S2AA/actions/workflows/release.yml/badge.svg)](https://github.com/narcilee7/S2AA/releases)
+[![Go Report Card](https://goreportcard.com/badge/github.com/narcilee7/S2AA)](https://goreportcard.com/report/github.com/narcilee7/S2AA)
 
 ---
 
