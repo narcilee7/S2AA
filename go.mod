@@ -1,6 +1,6 @@
 module github.com/narcilee7/S2AA
 
-go 1.25.5
+go 1.25.0
 
 require (
 	github.com/mark3labs/mcp-go v0.47.1
