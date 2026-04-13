@@ -1,0 +1,54 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+
+      - name: Test
+        run: go test -race ./...
+
+      - name: Build artifacts
+        run: |
+          mkdir -p dist
+          # sandbox-agent (linux only, runs inside microVM)
+          GOOS=linux  GOARCH=amd64 go build -ldflags="-s -w" -o dist/sandbox-agent-linux-amd64    ./cmd/sandbox-agent
+          GOOS=linux  GOARCH=arm64 go build -ldflags="-s -w" -o dist/sandbox-agent-linux-arm64    ./cmd/sandbox-agent
+
+          # mcp-server
+          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/mcp-server-darwin-amd64     ./cmd/mcp-server
+          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/mcp-server-darwin-arm64     ./cmd/mcp-server
+          GOOS=linux  GOARCH=amd64 go build -ldflags="-s -w" -o dist/mcp-server-linux-amd64      ./cmd/mcp-server
+          GOOS=linux  GOARCH=arm64 go build -ldflags="-s -w" -o dist/mcp-server-linux-arm64      ./cmd/mcp-server
+          GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/mcp-server-windows-amd64.exe ./cmd/mcp-server
+
+          # build-rootfs
+          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/build-rootfs-darwin-amd64  ./cmd/build-rootfs
+          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/build-rootfs-darwin-arm64  ./cmd/build-rootfs
+          GOOS=linux  GOARCH=amd64 go build -ldflags="-s -w" -o dist/build-rootfs-linux-amd64   ./cmd/build-rootfs
+          GOOS=linux  GOARCH=arm64 go build -ldflags="-s -w" -o dist/build-rootfs-linux-arm64   ./cmd/build-rootfs
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
+
+      - name: Ping Go module proxy
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          curl -s "https://proxy.golang.org/github.com/narcilee7/S2AA/@v/${TAG}.info" || true
