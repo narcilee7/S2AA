@@ -260,7 +260,7 @@ go test ./...
 - [x] Protobuf 代码生成替代手写 JSON 协议
 - [x] Guest agent 流式执行（gRPC streaming）
 - [x] Secret 动态注入（避免环境变量泄漏长生命周期凭证）
-- [ ] MCP (Model Context Protocol) Server 适配
+- [x] MCP (Model Context Protocol) Server 适配
 - [ ] 容器镜像构建工具（自动化 rootfs 打包）
 
 ---
