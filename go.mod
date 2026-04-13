@@ -1,11 +1,11 @@
 module github.com/narcilee7/S2AA
 
-go 1.25.0
+go 1.24.0
 
 require (
 	github.com/mark3labs/mcp-go v0.47.1
 	github.com/mdlayher/vsock v1.2.1
-	golang.org/x/sys v0.43.0
+	golang.org/x/sys v0.41.0
 	google.golang.org/grpc v1.80.0
 	google.golang.org/protobuf v1.36.11
 )

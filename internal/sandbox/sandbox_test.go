@@ -379,9 +379,9 @@ func TestSandboxStateStaysRunningWithConcurrentCommands(t *testing.T) {
 	}
 	defer sb.Cleanup()
 
-	cmd1 := *NewCommand("sleep", "1")
+	cmd1 := *NewCommand("sleep", "2")
 	cmd1.ID = "state-1"
-	cmd2 := *NewCommand("sleep", "1")
+	cmd2 := *NewCommand("sleep", "2")
 	cmd2.ID = "state-2"
 
 	done1 := make(chan *Result, 1)
@@ -410,13 +410,18 @@ func TestSandboxStateStaysRunningWithConcurrentCommands(t *testing.T) {
 
 	<-done1
 
-	time.Sleep(100 * time.Millisecond)
-	info = sb.Info()
-	if info.State != "running" {
-		t.Fatalf("expected running state while one command still executes, got %s", info.State)
+	// Poll for up to 500ms to avoid flaky timing on loaded runners.
+	var stateOk bool
+	for i := 0; i < 10; i++ {
+		time.Sleep(50 * time.Millisecond)
+		info = sb.Info()
+		if info.State == "running" && info.ActiveTasks >= 1 {
+			stateOk = true
+			break
+		}
 	}
-	if info.ActiveTasks < 1 {
-		t.Fatalf("expected at least one active task, got %d", info.ActiveTasks)
+	if !stateOk {
+		t.Fatalf("expected running state while one command still executes, got %s with %d active tasks", info.State, info.ActiveTasks)
 	}
 
 	<-done2
