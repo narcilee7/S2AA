@@ -111,11 +111,12 @@ func NewFactory(config *FactoryConfig) (*Factory, error) {
 
 // SandboxOptions contains optional parameters for sandbox creation.
 type SandboxOptions struct {
-	Level        SecurityLevel
-	Limits       *ResourceLimits
-	Capabilities *Capabilities
-	Persistent   bool
-	WorkspaceDir string // optional, auto-generated if empty
+	Level          SecurityLevel
+	Limits         *ResourceLimits
+	Capabilities   *Capabilities
+	Persistent     bool
+	WorkspaceDir   string // optional, auto-generated if empty
+	SecretProvider SecretProvider
 }
 
 // CreateSandbox creates a sandbox with specified security level.
@@ -167,7 +168,7 @@ func (f *Factory) CreateSandboxWithOptions(opts SandboxOptions) (Sandbox, error)
 
 	case LevelIsolated:
 		if f.config.IsolationBackend == "microvm" {
-			sb, err = newMicroVMSandbox(limits, caps, f.baseDir, audit.DefaultNoOp())
+			sb, err = newMicroVMSandbox(limits, caps, f.baseDir, opts.SecretProvider, audit.DefaultNoOp())
 		} else {
 			sb, err = newIsolatedSandbox(
 				limits,
@@ -179,7 +180,7 @@ func (f *Factory) CreateSandboxWithOptions(opts SandboxOptions) (Sandbox, error)
 
 	case LevelSecure:
 		if f.config.IsolationBackend == "microvm" {
-			sb, err = newMicroVMSandbox(limits, caps, f.baseDir, audit.DefaultNoOp())
+			sb, err = newMicroVMSandbox(limits, caps, f.baseDir, opts.SecretProvider, audit.DefaultNoOp())
 		} else {
 			if f.config.RemoteEndpoint == "" {
 				return nil, fmt.Errorf("remote endpoint required for L4 sandbox")

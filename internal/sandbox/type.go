@@ -72,6 +72,9 @@ type Command struct {
 	// Timeout control
 	Timeout time.Duration // Execution timeout
 
+	// Secrets
+	Secrets []string // Secret keys to inject dynamically via SecretProvider
+
 	// Metadata
 	Metadata map[string]string
 }

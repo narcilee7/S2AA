@@ -257,9 +257,9 @@ go test ./...
 - [x] 持久化 Workspace 与 Factory 管理
 - [x] 网络代理 + 审计日志骨架
 - [x] Checkpoint/Restore 基于 Firecracker Snapshot API
-- [ ] Protobuf 代码生成替代手写 JSON 协议
-- [ ] Guest agent 流式执行（WebSocket / gRPC streaming）
-- [ ] Secret 动态注入（避免环境变量泄漏长生命周期凭证）
+- [x] Protobuf 代码生成替代手写 JSON 协议
+- [x] Guest agent 流式执行（gRPC streaming）
+- [x] Secret 动态注入（避免环境变量泄漏长生命周期凭证）
 - [ ] MCP (Model Context Protocol) Server 适配
 - [ ] 容器镜像构建工具（自动化 rootfs 打包）
 
