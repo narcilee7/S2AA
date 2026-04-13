@@ -192,6 +192,35 @@ func TestFactoryConfigIsolationBackend(t *testing.T) {
 	}
 }
 
+func TestSecretProvider(t *testing.T) {
+	// Map provider
+	mapProvider := NewMapSecretProvider(map[string]string{
+		"API_KEY": "secret123",
+	})
+	v, err := mapProvider.GetSecret(context.Background(), "API_KEY")
+	if err != nil {
+		t.Fatalf("GetSecret failed: %v", err)
+	}
+	if v != "secret123" {
+		t.Errorf("Expected secret123, got %s", v)
+	}
+	_, err = mapProvider.GetSecret(context.Background(), "MISSING")
+	if err == nil {
+		t.Errorf("Expected error for missing secret")
+	}
+
+	// Env provider
+	t.Setenv("S2AA_SECRET_TEST_KEY", "env_secret")
+	envProvider := NewEnvSecretProvider("S2AA_SECRET_")
+	v, err = envProvider.GetSecret(context.Background(), "TEST_KEY")
+	if err != nil {
+		t.Fatalf("GetSecret from env failed: %v", err)
+	}
+	if v != "env_secret" {
+		t.Errorf("Expected env_secret, got %s", v)
+	}
+}
+
 func TestMicroVMSandboxInfoIncludesWorkspace(t *testing.T) {
 	cfg := &FactoryConfig{IsolationBackend: "microvm"}
 	f, err := NewFactory(cfg)

@@ -22,23 +22,24 @@ import (
 // It delegates execution, filesystem, and port operations to a guest agent
 // running inside the VM and reachable over vsock.
 type microvmSandbox struct {
-	id         string
-	limits     *ResourceLimits
-	caps       *Capabilities
-	baseDir    string
-	workspace  string
-	state      string
-	createdAt  time.Time
-	mutex      sync.RWMutex
-	running    int
-	guestCID   uint32
-	guestPort  uint32
-	apiSocket  string // Firecracker API unix socket path
-	vmPID      int
-	agent      *agentClient
-	auditor    audit.Auditor
-	persistent bool
-	proxy      *network.Proxy
+	id             string
+	limits         *ResourceLimits
+	caps           *Capabilities
+	baseDir        string
+	workspace      string
+	state          string
+	createdAt      time.Time
+	mutex          sync.RWMutex
+	running        int
+	guestCID       uint32
+	guestPort      uint32
+	apiSocket      string // Firecracker API unix socket path
+	vmPID          int
+	agent          *agentClient
+	secretProvider SecretProvider
+	auditor        audit.Auditor
+	persistent     bool
+	proxy          *network.Proxy
 }
 
 // firecrackerConfig is the JSON payload sent to Firecracker's API.
@@ -76,6 +77,7 @@ func newMicroVMSandbox(
 	limits *ResourceLimits,
 	caps *Capabilities,
 	baseDir string,
+	secretProvider SecretProvider,
 	auditor audit.Auditor,
 ) (*microvmSandbox, error) {
 	id := utils.GenerateID()
@@ -98,18 +100,19 @@ func newMicroVMSandbox(
 	guestCID := uint32(3 + time.Now().UnixNano()%10000)
 
 	s := &microvmSandbox{
-		id:         id,
-		limits:     limits,
-		caps:       caps,
-		baseDir:    baseDir,
-		workspace:  workspace,
-		state:      "idle",
-		createdAt:  time.Now().UTC(),
-		guestCID:   guestCID,
-		guestPort:  8080,
-		apiSocket:  filepath.Join(workspace, "firecracker.sock"),
-		auditor:    auditor,
-		persistent: false,
+		id:             id,
+		limits:         limits,
+		caps:           caps,
+		baseDir:        baseDir,
+		workspace:      workspace,
+		state:          "idle",
+		createdAt:      time.Now().UTC(),
+		guestCID:       guestCID,
+		guestPort:      8080,
+		apiSocket:      filepath.Join(workspace, "firecracker.sock"),
+		secretProvider: secretProvider,
+		auditor:        auditor,
+		persistent:     false,
 	}
 
 	return s, nil
@@ -323,6 +326,15 @@ func (s *microvmSandbox) ExecuteStreaming(
 		env = network.EnsureProxyEnv(env, "http://"+s.proxy.Addr())
 	}
 
+	if len(cmd.Secrets) > 0 && s.secretProvider != nil {
+		cleanup, injectedEnv, err := s.injectSecrets(ctx, cmd.Secrets, env)
+		if err != nil {
+			return nil, fmt.Errorf("secret injection failed: %w", err)
+		}
+		defer cleanup()
+		env = injectedEnv
+	}
+
 	req := &sandboxpb.ExecuteRequest{
 		CommandId:  cmd.ID,
 		Exec:       cmd.Exec,
@@ -512,6 +524,42 @@ func (s *microvmSandbox) endRun() {
 		s.state = "idle"
 	}
 	s.mutex.Unlock()
+}
+
+func (s *microvmSandbox) injectSecrets(ctx context.Context, keys []string, env []string) (func(), []string, error) {
+	secretsDir := "/dev/shm/.s2aa_secrets"
+	if resp, err := s.agent.MkdirAll(ctx, secretsDir, 0700); err != nil {
+		return nil, nil, err
+	} else if !resp.GetSuccess() {
+		return nil, nil, fmt.Errorf("%s", resp.GetError())
+	}
+
+	for _, key := range keys {
+		value, err := s.secretProvider.GetSecret(ctx, key)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to resolve secret %s: %w", key, err)
+		}
+		resp, err := s.agent.WriteFile(ctx, filepath.Join(secretsDir, key), []byte(value), 0600)
+		if err != nil {
+			return nil, nil, err
+		}
+		if !resp.GetSuccess() {
+			return nil, nil, fmt.Errorf("failed to write secret %s: %s", key, resp.GetError())
+		}
+	}
+
+	// Inject metadata env vars
+	env = append(env, "S2AA_SECRETS_DIR="+secretsDir)
+	for _, key := range keys {
+		env = append(env, key+"_FILE="+filepath.Join(secretsDir, key))
+	}
+
+	cleanup := func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_, _ = s.agent.DeleteFile(ctx, secretsDir)
+	}
+	return cleanup, env, nil
 }
 
 func makeAllowFunc(caps *Capabilities) network.AllowFunc {

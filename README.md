@@ -201,12 +201,19 @@ sb, _ := f.CreateSandboxWithOptions(sandbox.SandboxOptions{
 ## 项目结构
 
 ```
-agent-sandbox/
+S2AA/
 ├── api/
-│   └── sandbox.proto               # Guest agent gRPC 规范（当前手写 JSON-over-HTTP 实现）
+│   ├── sandbox.proto               # Guest agent gRPC 规范
+│   └── sandboxpb/                  # Protobuf 生成代码
+│       ├── sandbox.pb.go
+│       └── sandbox_grpc.pb.go
 ├── cmd/
-│   └── sandbox-agent/
-│       └── main.go                 # 运行在 microVM guest 内的 agent
+│   ├── sandbox-agent/
+│   │   └── main.go                 # 运行在 microVM guest 内的 gRPC agent
+│   ├── mcp-server/
+│   │   └── main.go                 # MCP (Model Context Protocol) 服务端
+│   └── build-rootfs/
+│       └── main.go                 # Firecracker rootfs 自动构建工具
 ├── internal/
 │   ├── audit/
 │   │   └── audit.go                # 审计日志接口
@@ -221,8 +228,8 @@ agent-sandbox/
 │   │   ├── isolated.go             # L3 Docker (legacy)
 │   │   ├── secure.go               # L4 gRPC client (legacy)
 │   │   ├── microvm.go              # L3/L4 Firecracker host 端封装
-│   │   ├── microvm_agent.go        # Host vsock HTTP 客户端
-│   │   ├── microvm_proto.go        # Guest agent 通信协议结构体
+│   │   ├── microvm_agent.go        # Host vsock gRPC 客户端
+│   │   ├── secret.go               # SecretProvider 接口与实现
 │   │   ├── fs.go                   # Filesystem 接口
 │   │   ├── port.go                 # PortForwarder 接口
 │   │   └── legacy.go               # Legacy sandbox 的兼容实现
@@ -257,11 +264,11 @@ go test ./...
 - [x] 持久化 Workspace 与 Factory 管理
 - [x] 网络代理 + 审计日志骨架
 - [x] Checkpoint/Restore 基于 Firecracker Snapshot API
-- [ ] Protobuf 代码生成替代手写 JSON 协议
-- [ ] Guest agent 流式执行（WebSocket / gRPC streaming）
-- [ ] Secret 动态注入（避免环境变量泄漏长生命周期凭证）
-- [ ] MCP (Model Context Protocol) Server 适配
-- [ ] 容器镜像构建工具（自动化 rootfs 打包）
+- [x] Protobuf 代码生成替代手写 JSON 协议
+- [x] Guest agent 流式执行（gRPC streaming）
+- [x] Secret 动态注入（避免环境变量泄漏长生命周期凭证）
+- [x] MCP (Model Context Protocol) Server 适配
+- [x] 容器镜像构建工具（自动化 rootfs 打包）
 
 ---
 
