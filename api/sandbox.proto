@@ -1,0 +1,107 @@
+syntax = "proto3";
+
+package sandbox;
+option go_package = "github.com/narcilee7/agent-sandbox/api";
+
+// GuestAgent service is exposed inside the microVM via vsock.
+service GuestAgent {
+  rpc Execute(ExecuteRequest) returns (ExecuteResponse);
+  rpc ExecuteStream(ExecuteRequest) returns (stream StreamChunk);
+  rpc Cancel(CancelRequest) returns (CancelResponse);
+
+  rpc ReadFile(FileRequest) returns (FileResponse);
+  rpc WriteFile(WriteFileRequest) returns (FileResponse);
+  rpc ListFiles(FileRequest) returns (ListFilesResponse);
+  rpc DeleteFile(FileRequest) returns (FileResponse);
+
+  rpc ExposePort(PortRequest) returns (PortResponse);
+  rpc GetStatus(StatusRequest) returns (StatusResponse);
+}
+
+message ExecuteRequest {
+  string command_id = 1;
+  string exec = 2;
+  repeated string args = 3;
+  repeated string env = 4;
+  string working_dir = 5;
+  bytes stdin = 6;
+  int64 timeout_ms = 7;
+}
+
+message ExecuteResponse {
+  string command_id = 1;
+  int32 exit_code = 2;
+  bool success = 3;
+  bytes stdout = 4;
+  bytes stderr = 5;
+  string error = 6;
+  int64 duration_ms = 7;
+}
+
+message StreamChunk {
+  oneof payload {
+    bytes stdout = 1;
+    bytes stderr = 2;
+    double progress = 3;
+    ExecuteResponse result = 4;
+  }
+}
+
+message CancelRequest {
+  string command_id = 1;
+}
+
+message CancelResponse {
+  bool success = 1;
+}
+
+message FileRequest {
+  string path = 1;
+}
+
+message WriteFileRequest {
+  string path = 1;
+  bytes data = 2;
+  uint32 mode = 3;
+}
+
+message FileResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+message FileInfoMsg {
+  string name = 1;
+  string path = 2;
+  int64 size = 3;
+  uint32 mode = 4;
+  int64 mod_time_unix = 5;
+  bool is_dir = 6;
+}
+
+message ListFilesResponse {
+  bool success = 1;
+  string error = 2;
+  repeated FileInfoMsg entries = 3;
+}
+
+message PortRequest {
+  int32 container_port = 1;
+}
+
+message PortResponse {
+  bool success = 1;
+  string error = 2;
+  int32 host_port = 3;
+  string public_url = 4;
+}
+
+message StatusRequest {
+  string sandbox_id = 1;
+}
+
+message StatusResponse {
+  string state = 1;
+  int32 active_tasks = 2;
+  int64 uptime_ms = 3;
+}

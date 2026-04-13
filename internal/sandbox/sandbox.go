@@ -22,6 +22,8 @@ type sandbox interface {
 	Level() SecurityLevel
 	Filesystem() Filesystem
 	PortForwarder() PortForwarder
+	Snapshot(snapshotID string) error
+	Restore(snapshotID string) error
 }
 
 // Sandbox is the public interface for secure execution environment.
@@ -56,6 +58,12 @@ type Sandbox interface {
 
 	// PortForwarder returns the sandbox port forwarder.
 	PortForwarder() PortForwarder
+
+	// Snapshot creates a snapshot of the sandbox state.
+	Snapshot(snapshotID string) error
+
+	// Restore restores the sandbox from a snapshot.
+	Restore(snapshotID string) error
 }
 
 // StreamingOptions contains options for streaming execution.

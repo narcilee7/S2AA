@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/narcilee7/agent-sandbox/internal/utils"
+	"github.com/narcilee7/S2AA/internal/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -422,6 +422,16 @@ func (s *secureSandbox) Filesystem() Filesystem {
 // PortForwarder returns a no-op port forwarder.
 func (s *secureSandbox) PortForwarder() PortForwarder {
 	return defaultNoopPortForwarder
+}
+
+// Snapshot is not supported for legacy secure sandbox.
+func (s *secureSandbox) Snapshot(snapshotID string) error {
+	return fmt.Errorf("snapshot not supported for secure sandbox")
+}
+
+// Restore is not supported for legacy secure sandbox.
+func (s *secureSandbox) Restore(snapshotID string) error {
+	return fmt.Errorf("restore not supported for secure sandbox")
 }
 
 // Endpoint returns remote sandbox endpoint.

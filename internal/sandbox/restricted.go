@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/narcilee7/agent-sandbox/internal/utils"
+	"github.com/narcilee7/S2AA/internal/utils"
 	"golang.org/x/sys/unix"
 )
 
@@ -622,6 +622,16 @@ func (s *restrictedSandbox) Filesystem() Filesystem {
 // PortForwarder returns a no-op port forwarder.
 func (s *restrictedSandbox) PortForwarder() PortForwarder {
 	return defaultNoopPortForwarder
+}
+
+// Snapshot is not supported for legacy restricted sandbox.
+func (s *restrictedSandbox) Snapshot(snapshotID string) error {
+	return fmt.Errorf("snapshot not supported for restricted sandbox")
+}
+
+// Restore is not supported for legacy restricted sandbox.
+func (s *restrictedSandbox) Restore(snapshotID string) error {
+	return fmt.Errorf("restore not supported for restricted sandbox")
 }
 
 // readAll reads all data from a reader.

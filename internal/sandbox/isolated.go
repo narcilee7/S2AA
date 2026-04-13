@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/narcilee7/agent-sandbox/internal/utils"
+	"github.com/narcilee7/S2AA/internal/utils"
 )
 
 // isolatedSandbox provides container-isolated execution.
@@ -661,6 +661,16 @@ func (s *isolatedSandbox) Filesystem() Filesystem {
 // PortForwarder returns a no-op port forwarder.
 func (s *isolatedSandbox) PortForwarder() PortForwarder {
 	return defaultNoopPortForwarder
+}
+
+// Snapshot is not supported for legacy isolated sandbox.
+func (s *isolatedSandbox) Snapshot(snapshotID string) error {
+	return fmt.Errorf("snapshot not supported for isolated sandbox")
+}
+
+// Restore is not supported for legacy isolated sandbox.
+func (s *isolatedSandbox) Restore(snapshotID string) error {
+	return fmt.Errorf("restore not supported for isolated sandbox")
 }
 
 // Runtime returns container runtime being used.

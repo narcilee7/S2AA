@@ -8,7 +8,8 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/narcilee7/agent-sandbox/internal/utils"
+	"github.com/narcilee7/S2AA/internal/audit"
+	"github.com/narcilee7/S2AA/internal/utils"
 )
 
 // Factory creates and manages sandboxes.
@@ -165,22 +166,30 @@ func (f *Factory) CreateSandboxWithOptions(opts SandboxOptions) (Sandbox, error)
 		)
 
 	case LevelIsolated:
-		sb, err = newIsolatedSandbox(
-			limits,
-			caps,
-			f.baseDir,
-			f.config.ContainerRuntime,
-		)
+		if f.config.IsolationBackend == "microvm" {
+			sb, err = newMicroVMSandbox(limits, caps, f.baseDir, audit.DefaultNoOp())
+		} else {
+			sb, err = newIsolatedSandbox(
+				limits,
+				caps,
+				f.baseDir,
+				f.config.ContainerRuntime,
+			)
+		}
 
 	case LevelSecure:
-		if f.config.RemoteEndpoint == "" {
-			return nil, fmt.Errorf("remote endpoint required for L4 sandbox")
+		if f.config.IsolationBackend == "microvm" {
+			sb, err = newMicroVMSandbox(limits, caps, f.baseDir, audit.DefaultNoOp())
+		} else {
+			if f.config.RemoteEndpoint == "" {
+				return nil, fmt.Errorf("remote endpoint required for L4 sandbox")
+			}
+			sb, err = newSecureSandbox(
+				limits,
+				caps,
+				f.config.RemoteEndpoint,
+			)
 		}
-		sb, err = newSecureSandbox(
-			limits,
-			caps,
-			f.config.RemoteEndpoint,
-		)
 
 	default:
 		return nil, fmt.Errorf("unknown security level: %d", level)
@@ -360,7 +369,9 @@ func (w *sandboxWrapper) Cleanup() error {
 }
 
 func (w *sandboxWrapper) Info() SandboxInfo {
-	return w.sb.Info()
+	info := w.sb.Info()
+	info.Persistent = w.persistent
+	return info
 }
 
 func (w *sandboxWrapper) Level() SecurityLevel {
@@ -373,4 +384,12 @@ func (w *sandboxWrapper) Filesystem() Filesystem {
 
 func (w *sandboxWrapper) PortForwarder() PortForwarder {
 	return w.sb.PortForwarder()
+}
+
+func (w *sandboxWrapper) Snapshot(snapshotID string) error {
+	return w.sb.Snapshot(snapshotID)
+}
+
+func (w *sandboxWrapper) Restore(snapshotID string) error {
+	return w.sb.Restore(snapshotID)
 }

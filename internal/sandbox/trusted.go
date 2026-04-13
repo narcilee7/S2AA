@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/narcilee7/agent-sandbox/internal/utils"
+	"github.com/narcilee7/S2AA/internal/utils"
 )
 
 // trustedSandbox provides unrestricted command execution.
@@ -418,6 +418,16 @@ func (s *trustedSandbox) Filesystem() Filesystem {
 // PortForwarder returns a no-op port forwarder.
 func (s *trustedSandbox) PortForwarder() PortForwarder {
 	return defaultNoopPortForwarder
+}
+
+// Snapshot is not supported for legacy trusted sandbox.
+func (s *trustedSandbox) Snapshot(snapshotID string) error {
+	return fmt.Errorf("snapshot not supported for trusted sandbox")
+}
+
+// Restore is not supported for legacy trusted sandbox.
+func (s *trustedSandbox) Restore(snapshotID string) error {
+	return fmt.Errorf("restore not supported for trusted sandbox")
 }
 
 func (s *trustedSandbox) beginRun() {
